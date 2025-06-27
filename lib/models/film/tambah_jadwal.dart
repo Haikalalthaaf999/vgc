@@ -11,24 +11,24 @@ String tambahJadwalToJson(TambahJadwal data) => json.encode(data.toJson());
 
 class TambahJadwal {
   String message;
-  Data data;
+  JadwalData data;
 
   TambahJadwal({required this.message, required this.data});
 
   factory TambahJadwal.fromJson(Map<String, dynamic> json) =>
-      TambahJadwal(message: json["message"], data: Data.fromJson(json["data"]));
+      TambahJadwal(message: json["message"], data: JadwalData.fromJson(json["data"]));
 
   Map<String, dynamic> toJson() => {"message": message, "data": data.toJson()};
 }
 
-class Data {
+class JadwalData {
   int filmId;
   DateTime startTime;
   DateTime updatedAt;
   DateTime createdAt;
   int id;
 
-  Data({
+  JadwalData({
     required this.filmId,
     required this.startTime,
     required this.updatedAt,
@@ -36,7 +36,7 @@ class Data {
     required this.id,
   });
 
-  factory Data.fromJson(Map<String, dynamic> json) => Data(
+  factory JadwalData.fromJson(Map<String, dynamic> json) => JadwalData(
     filmId: json["film_id"],
     startTime: DateTime.parse(json["start_time"]),
     updatedAt: DateTime.parse(json["updated_at"]),

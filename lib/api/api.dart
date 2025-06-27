@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vgc/models/film/list.dart';
 import 'package:vgc/models/film/list_jadwal.dart';
+import 'package:vgc/models/film/tambah_jadwal.dart';
 import 'package:vgc/models/login/login_response.dart';
 import 'package:http/http.dart' as http;
 import 'package:vgc/models/register/register_response.dart';
@@ -78,33 +80,32 @@ class AuthApi {
     }
   }
 
-  static Future<void> uploadFilm({
-    required String title,
-    required String description,
-    required String genre,
-    required File imageFile,
-  }) async {
-    final uri = Uri.parse('$baseUrl/api/films');
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+  static Future<bool> uploadFilm({
+  required String title,
+  required String description,
+  required String genre,
+  required File imageFile,
+}) async {
+  final uri = Uri.parse('https://appbioskop.mobileprojp.com/api/films');
+  final request = http.MultipartRequest('POST', uri);
 
-    final request = http.MultipartRequest('POST', uri)
-      ..fields['title'] = title
-      ..fields['description'] = description
-      ..fields['genre'] = genre
-      ..files.add(await http.MultipartFile.fromPath('image', imageFile.path))
-      ..headers['Accept'] = 'application/json'
-      ..headers['Authorization'] = 'Bearer $token';
+  request.fields['judul'] = title;
+  request.fields['deskripsi'] = description;
+  request.fields['genre'] = genre;
 
-    final response = await request.send();
+  final image = await http.MultipartFile.fromPath('image', imageFile.path);
+  request.files.add(image);
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      print('Berhasil menambahkan film');
-    } else {
-      final respStr = await response.stream.bytesToString();
-      throw Exception('Gagal upload: $respStr');
-    }
+  final response = await request.send();
+
+  if (response.statusCode == 200) {
+    return true;
+  } else {
+    print('Upload failed: ${response.statusCode}');
+    return false;
   }
+}
+
 
   /// ✅ Tambahkan ini untuk ambil jadwal film berdasarkan filmId
   static Future<List<JadwalDatum>> fetchJadwal(int filmId) async {
@@ -119,4 +120,36 @@ class AuthApi {
       throw Exception('Gagal memuat jadwal: ${response.statusCode}');
     }
   }
+   static Future<TambahJadwal> tambahJadwal(int filmId, DateTime startTime) async {
+    final url = Uri.parse('$baseUrl/api/films/jadwal');
+    final body = {
+      'film_id': filmId.toString(),
+      'start_time': DateFormat('yyyy-MM-dd HH:mm:ss').format(startTime),
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      print('STATUS: ${response.statusCode}');
+      print('BODY: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return TambahJadwal(message: data['message'] ?? 'Berhasil menambahkan jadwal',data: JadwalData.fromJson(data['data']) );
+      } else {
+        throw Exception('Gagal menambahkan jadwal: ${response.body}');
+      } 
+    } catch (e) {
+      print('ERROR saat menambahkan jadwal: $e');
+      rethrow;
+    }
+  }
+
 }

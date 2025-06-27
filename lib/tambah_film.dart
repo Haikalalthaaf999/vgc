@@ -1,163 +1,153 @@
-import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:vgc/models/film/tambah.dart';
+import '../api/api.dart'; // pastikan path ini benar sesuai struktur project-mu
 
 class PickImagePage extends StatefulWidget {
-  const PickImagePage({super.key});
-
   @override
-  State<PickImagePage> createState() => _PickImagePageState();
+  _PickImagePageState createState() => _PickImagePageState();
 }
 
 class _PickImagePageState extends State<PickImagePage> {
-  File? _image;
+  File? _selectedImage;
+  final picker = ImagePicker();
+
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _genreController = TextEditingController();
+  bool _isLoading = false;
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      final imagePath = pickedFile.path;
-
-      final newMovie = TambahData(
-        title: _titleController.text,
-        description: _descriptionController.text,
-        genre: _genreController.text,
-        image: imagePath, // <= ini penting
-      );
-
-      Navigator.pop(context, newMovie);
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
     }
   }
 
-  Future<TambahData?> uploadFilmToApi(TambahData film, File imageFile) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+  Future<void> _submitFilm() async {
+  // Validasi field
+  if (_selectedImage == null ||
+      _titleController.text.trim().isEmpty ||
+      _descriptionController.text.trim().isEmpty ||
+      _genreController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Semua field dan gambar wajib diisi')),
+    );
+    return;
+  }
 
-    final uri = Uri.parse('https://appbioskop.mobileprojp.com/api/films');
-    final request = http.MultipartRequest('POST', uri);
+  setState(() {
+    _isLoading = true;
+  });
 
-    request.headers['Accept'] = 'application/json';
-    request.headers['Authorization'] = 'Bearer $token';
-
-    // FIX: Cek null
-    request.fields['title'] = film.title ?? '';
-    request.fields['description'] = film.description ?? '';
-    request.fields['genre'] = film.genre ?? '';
-
-    request.files.add(
-      await http.MultipartFile.fromPath('image', imageFile.path),
+  try {
+    // Panggil API upload
+    final response = await AuthApi.uploadFilm(
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      genre: _genreController.text.trim(),
+      imageFile: _selectedImage!,
     );
 
-    final response = await request.send();
-    final respStr = await response.stream.bytesToString();
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final decoded = json.decode(respStr);
-      print("RESPON DARI API: $decoded");
-      return TambahData.fromJson(decoded['data']);
-    } else {
-      print("Error Response: $respStr");
-      return null;
-    }
-  }
-
-  void _submit() async {
-    if (_titleController.text.isEmpty ||
-        _descriptionController.text.isEmpty ||
-        _genreController.text.isEmpty ||
-        _image == null) {
+    // Jika berhasil
+    if (response == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Semua field dan gambar wajib diisi")),
+        const SnackBar(content: Text('Film berhasil ditambahkan')),
       );
-      return;
+      Navigator.pop(context, true); // kembali dan reload list kalau perlu
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal menambahkan film')),
+      );
     }
-
-    final movieToUpload = TambahData(
-      title: _titleController.text,
-      description: _descriptionController.text,
-      genre: _genreController.text,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      id: 0,
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Terjadi kesalahan: $e')),
     );
-
-    final uploadedMovie = await uploadFilmToApi(movieToUpload, _image!);
-
-    if (uploadedMovie != null) {
-      final updatedMovie = uploadedMovie.copyWith(image: _image!.path);
-      Navigator.pop(context, updatedMovie);
-    }
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Tambah Film Baru")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _image != null
-                ? Image.file(_image!, height: 200)
-                : Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image, size: 100),
-                  ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.image),
-              label: const Text("Pilih dari Gallery"),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Judul Film',
-                border: OutlineInputBorder(),
+      appBar: AppBar(
+        title: Text('Tambah Film dengan Gambar'),
+        backgroundColor: Colors.deepPurple,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: _selectedImage != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          _selectedImage!,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Container(
+                        width: double.infinity,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey[100],
+                        ),
+                        child: Icon(Icons.image, size: 80, color: Colors.grey),
+                      ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: 'Judul Film',
+                  border: OutlineInputBorder(),
+                ),
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _genreController,
-              decoration: const InputDecoration(
-                labelText: 'Genre',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Deskripsi',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _submit,
-              icon: const Icon(Icons.save),
-              label: const Text("Simpan Film"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _genreController,
+                decoration: InputDecoration(
+                  labelText: 'Genre',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              _isLoading
+                  ? CircularProgressIndicator()
+                  : ElevatedButton.icon(
+                      onPressed: _submitFilm,
+                      icon: Icon(Icons.upload),
+                      label: Text('Upload Film'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        minimumSize: Size(double.infinity, 50),
+                      ),
+                    ),
+            ],
+          ),
         ),
       ),
     );

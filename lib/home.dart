@@ -21,6 +21,7 @@ class _HomePageState extends State<HomePage> {
 
   final List<Map<String, dynamic>> movieImages = [
     {
+      'id': 1,
       'title': 'Inside Out 2',
       'imageUrl':
           'https://i.pinimg.com/736x/7a/5c/f7/7a5cf71a89266b24ec1c0fe647d69037.jpg',
@@ -30,6 +31,7 @@ class _HomePageState extends State<HomePage> {
       'synopsis': 'Film Inside Out 2 menceritakan Riley yang beranjak remaja dan menghadapi berbagai perubahan emosi. Emosi-emosi baru seperti Anxiety (Kecemasan), Envy (Iri), Ennui (Jenuh), dan Embarrassment (Malu) muncul dan mengganggu emosi inti Riley (Joy, Sadness, Anger, Disgust, dan Fear).',
     },
     {
+      'id': 2,
       'title': 'Spider-Man: No Way Home',
       'imageUrl':
           'https://upload.wikimedia.org/wikipedia/en/0/00/Spider-Man_No_Way_Home_poster.jpg',
@@ -40,6 +42,7 @@ class _HomePageState extends State<HomePage> {
           'Peter Parker menghadapi kekacauan multiverse setelah identitasnya terbongkar.',
     },
     {
+      'id': 3,
       'title': 'Doctor Strange Multiverse of Madness',
       'imageUrl':
           'https://i.pinimg.com/736x/68/6e/f1/686ef19247330b0530f17b65f1e7541f.jpg',
@@ -50,6 +53,7 @@ class _HomePageState extends State<HomePage> {
           'Dokter Strange menghadapi kekacauan multiverse setelah identitasnya terbongkar. Mereka harus mengumpulkan semua kekuatan untuk menghindari kekacauan yang lebih besar dari sebelumnya.',
     },
     {
+      'id': 4,
       'title': 'Sonic the Hedgehog 2',
       'imageUrl':
           'https://i.pinimg.com/736x/c3/ea/27/c3ea276736f2424ad341f5bef3349bb4.jpg',
@@ -60,6 +64,7 @@ class _HomePageState extends State<HomePage> {
           'Sonic menghadapi kekacauan multiverse setelah identitasnya terbongkar.',
     },
     {
+      'id': 5,
       'title': '24H Limit',
       'imageUrl':
           'https://i.pinimg.com/736x/28/8b/b2/288bb226c16be6d37ad95576ab95bafc.jpg',
@@ -154,7 +159,7 @@ Future<List<TambahData>> fetchAllMoviesFromApi() async {
         onPressed: () async {
           final newMovie = await Navigator.push<TambahData?>(
             context,
-            MaterialPageRoute(builder: (_) => const PickImagePage()),
+            MaterialPageRoute(builder: (_) =>  PickImagePage()),
           );
 
           if (newMovie != null) {
@@ -281,63 +286,104 @@ Future<List<TambahData>> fetchAllMoviesFromApi() async {
   }
 
   Widget buildAllMovies() {
-    if (allMovies.isEmpty) {
-      return const Text(
-        "Belum ada film ditambahkan.",
-        style: TextStyle(color: Colors.white70),
-      );
-    }
+  if (allMovies.isEmpty) {
+    return const Text(
+      "Belum ada film ditambahkan.",
+      style: TextStyle(color: Colors.white70),
+    );
+  }
 
-    return SizedBox(
-      height: 150,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: allMovies.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final movie = allMovies[index];
-          final imageUrl =
-              movie.imageUrl ??
-              (movie.image != null && movie.image!.startsWith('films/')
-                  ? 'https://appbioskop.mobileprojp.com/public/${movie.image}'
-                  : '');
+  return GridView.builder(
+    physics: const NeverScrollableScrollPhysics(), // untuk scroll tidak konflik
+    shrinkWrap: true,
+    itemCount: allMovies.length,
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 3, // 3 kolom
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 0.6, // tinggi gambar lebih panjang
+    ),
+    itemBuilder: (context, index) {
+      final movie = allMovies[index];
+      final imageUrl =
+          movie.imageUrl ??
+          (movie.image != null && movie.image!.startsWith('films/')
+              ? 'https://appbioskop.mobileprojp.com/public/${movie.image}'
+              : '');
 
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MovieDetailPage(
-                    filmId: movie.id??0,
-                    title: movie.title ?? 'Unknown',
-                    imageUrl: imageUrl,
-                    releaseDate: 'Unknown',
-                    duration: '1j 29m', // Ganti jika tersedia
-                    rating: 4.0, // Ganti jika tersedia
-                    synopsis: 'Sinopsis tidak tersedia.',
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              width: 100,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MovieDetailPage(
+                filmId: movie.id ?? 0,
+                title: movie.title ?? 'Unknown',
+                imageUrl: imageUrl,
+                releaseDate: 'Unknown',
+                duration: '1j 29m',
+                rating: 4.0,
+                synopsis: 'Sinopsis tidak tersedia.',
               ),
-              child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.broken_image);
-                      },
-                    )
-                  : const Icon(Icons.image_not_supported),
             ),
           );
         },
-      ),
-    );
-  }
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        height: 140,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const SizedBox(
+                            height: 140,
+                            child: Center(child: Icon(Icons.broken_image)),
+                          );
+                        },
+                      )
+                    : const SizedBox(
+                        height: 140,
+                        child: Center(child: Icon(Icons.image_not_supported)),
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Text(
+                  movie.title ?? 'No Title',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Row(
+                  children: const [
+                    Icon(Icons.star, size: 14, color: Colors.amber),
+                    SizedBox(width: 4),
+                    Text("4.0", style: TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 }

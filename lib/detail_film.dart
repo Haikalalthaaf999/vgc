@@ -3,17 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:vgc/models/film/list_jadwal.dart';
 import 'package:vgc/api/api.dart';
+import 'package:vgc/tambah_jadwal.dart';
 
 class MovieDetailPage extends StatefulWidget {
   final int filmId;
   final String title;
   final String imageUrl;
   final String releaseDate;
-  final String duration;
-  final double rating;
+  final String duration;  
+  final double rating;   
   final String synopsis;
 
-  const MovieDetailPage({
+  const MovieDetailPage({  
     super.key,
     required this.filmId,
     required this.title,
@@ -38,6 +39,9 @@ class _MovieDetailPageState extends State<MovieDetailPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+  setState(() {}); // trigger rebuild setiap kali tab berubah
+});
     loadJadwal();
   }
 
@@ -68,6 +72,23 @@ class _MovieDetailPageState extends State<MovieDetailPage>
 
     return Scaffold(
       backgroundColor: const Color(0xff011245),
+        floatingActionButton: _tabController.index == 1
+      ? FloatingActionButton(
+          backgroundColor: Colors.yellow,
+          child: const Icon(Icons.add, color: Colors.black),
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TambahJadwalPage(filmId: widget.filmId),
+              ),
+            );
+            if (result == true) {
+              loadJadwal(); // refresh jadwal setelah tambah
+            }
+          },
+        ): 
+        null,
       body: Column(
         children: [
           Stack(

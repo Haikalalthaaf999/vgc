@@ -1,60 +1,52 @@
-class TambahData {
-  final String? title;
-  final String? description;
-  final String? genre;
-  final DateTime? updatedAt;
-  final DateTime? createdAt;
-  final int? id;
-  final String? image;
-  final String? imageUrl; // Tambahan
+// To parse this JSON data, do
+//
+//     final addMovieResponse = addMovieResponseFromJson(jsonString);
 
-  TambahData({
-    this.title,
-    this.description,
-    this.genre,
-    this.updatedAt,
-    this.createdAt,
-    this.id,
-    this.image,
-    this.imageUrl, // Tambahan
+import 'dart:convert';
+
+AddMovieResponse addMovieResponseFromJson(String str) =>
+    AddMovieResponse.fromJson(json.decode(str));
+
+String addMovieResponseToJson(AddMovieResponse data) =>
+    json.encode(data.toJson());
+
+class AddMovieResponse {
+  String title;
+  String description;
+  String genre;
+  String director;
+  String writer;
+  String stats;
+  String imageBase64;
+
+  AddMovieResponse({
+    required this.title,
+    required this.description,
+    required this.genre,
+    required this.director,
+    required this.writer,
+    required this.stats,
+    required this.imageBase64,
   });
 
-  TambahData copyWith({String? image, String? imageUrl}) {
-    return TambahData(
-      title: title,
-      description: description,
-      genre: genre,
-      updatedAt: updatedAt,
-      createdAt: createdAt,
-      id: id,
-      image: image ?? this.image,
-      imageUrl: imageUrl ?? this.imageUrl, // Tambahan
-    );
-  }
-
-  factory TambahData.fromJson(Map<String, dynamic> json) => TambahData(
-    title: json["title"] as String?,
-    description: json["description"] as String?,
-    genre: json["genre"] as String?,
-    updatedAt: json["updated_at"] != null
-        ? DateTime.parse(json["updated_at"])
-        : null,
-    createdAt: json["created_at"] != null
-        ? DateTime.parse(json["created_at"])
-        : null,
-    id: json["id"] as int?,
-    image: json["image"] as String?,
-    imageUrl: json["image_url"] as String?, // Tambahan
-  );
+  factory AddMovieResponse.fromJson(Map<String, dynamic> json) =>
+      AddMovieResponse(
+        title: json["title"],
+        description: json["description"],
+        genre: json["genre"],
+        director: json["director"],
+        writer: json["writer"],
+        stats: json["stats"],
+        imageBase64: json["image_base64"],
+      );
 
   Map<String, dynamic> toJson() => {
-    "title": title ?? '',
-    "description": description ?? '',
-    "genre": genre ?? '',
-    "updated_at": updatedAt?.toIso8601String() ?? '',
-    "created_at": createdAt?.toIso8601String() ?? '',
-    "id": id ?? 0,
-    "image": image ?? '',
-    "image_url": imageUrl ?? '', // Tambahan
+    "title": title,
+    "description": description,
+    "genre": genre,
+    "director": director,
+    "writer": writer,
+    "stats": stats,
+    "image_base64": imageBase64,
   };
 }

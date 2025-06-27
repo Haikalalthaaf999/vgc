@@ -7,4 +7,5 @@ class ApiEndpoint {
   static const String update = "$baseUrlApi/update";
   static const String list = "$baseUrlApi/films";
   static const String tambah = "$baseUrlApi/tambah";
+  static const String jadwal = "$baseUrlApi/jadwal";
 }
